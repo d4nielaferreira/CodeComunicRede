@@ -1,0 +1,202 @@
+using System;
+using System.Drawing;
+using System.Collections;
+using System.ComponentModel;
+using System.Windows.Forms;
+using System.Threading
+using System.Net.Sockets;
+using System.IO;
+ 
+namespace Cliente
+ 
+{
+   public class Client : System.Windows.Forms.Form
+   {
+ 
+      private System.Windows.Forms.TextBox Envia;
+      
+      private System.Windows.Forms.TextBox Exibe;
+      
+      private NetworkStream sockStream;
+ 
+      private BinaryWriter escreve;
+ 
+      private BinaryReader le;
+ 
+      private string message = "";
+ 
+      private Thread tipoThread;
+ 
+      /// <summary>
+      /// Required designer variable.
+      /// </summary>
+ 
+      private System.ComponentModel.Container components = null;
+ 
+      public Client()
+      {
+         InitializeComponent();
+         tipoThread = new Thread(new ThreadStart(RunClient));
+         tipoThread.Start();
+      }
+ 
+      /// <summary>
+      /// Clean up any resources being used.
+      /// </summary>
+ 
+      protected override void Dispose(bool disposing)
+ 
+      {
+         if( disposing )
+         {
+            if(components != null)
+            {
+               components.Dispose();
+            }
+         }
+         base.Dispose(disposing);
+      }
+ 
+  
+ 
+            #region Windows Form Designer generated code
+ 
+      /// <summary>
+      /// Required method for Designer support - do not modify
+      /// the contents of this method with the code editor.
+      /// </summary>
+ 
+      private void InitializeComponent()
+       {
+         this.Envia = new System.Windows.Forms.TextBox();
+ 
+         this.Exibe = new System.Windows.Forms.TextBox();
+ 
+         this.SuspendLayout();
+ 
+         this.Envia.Location = new System.Drawing.Point(8, 8);
+ 
+         this.Envia.Name = "Envia";
+ 
+         this.Envia.Size = new System.Drawing.Size(289, 20);
+ 
+         this.Envia.Text = "";
+ 
+         this.Envia.KeyDown += new System.Windows.Forms.KeyEventHandler(this.Envia_KeyDown);
+ 
+         this.Exibe.Location = new System.Drawing.Point(8, 40);
+ 
+         this.Exibe.Multiline = true;
+ 
+         this.Exibe.Name = "Exibe";
+ 
+         this.Exibe.Size = new System.Drawing.Size(282, 218);
+ 
+         this.Exibe.Text = "";
+ 
+         this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
+ 
+         this.ClientSize = new System.Drawing.Size(272, 272);
+ 
+         this.Controls.AddRange(new System.Windows.Forms.Control[] {                                                                      this.Exibe,  this.Envia});
+ 
+         this.Name = "Client";
+ 
+         this.Text = "Cliente";
+ 
+         this.Closing += new System.ComponentModel.CancelEventHandler(this.Client_Closing);
+ 
+         this.ResumeLayout(false);
+      }
+ 
+            #endregion
+ 
+      [STAThread]
+ 
+      static void Main()
+      {
+         Application.Run(new Client());
+      }
+ 
+      protected void Client_Closing(object sender, CancelEventArgs e)
+      {        
+         System.Environment.Exit(System.Environment.ExitCode);
+      }
+ 
+      protected void Envia_KeyDown (object sender, KeyEventArgs e)
+      {
+         try
+         {        
+            if (e.KeyCode == Keys.Enter)
+            {
+               escreve.Write(Envia.Text);
+               
+               Exibe.Text += Envia.Text;
+ 
+               Envia.Clear();           
+            }
+         }
+         catch (SocketException)
+         {
+            Exibe.Text += "Atenção! Erro...";
+         }
+      }
+ 
+ 
+      public void RunClient()
+      {
+         TcpClient cliente;
+         
+         try
+         {
+            cliente = new TcpCliente();
+ 
+            cliente.Connect("localhost", 9000);
+            
+ 
+            //Se preferir altere localhost pelo IP do server
+ 
+            sockStream = cliente.GetStream();
+ 
+            escreve = new BinaryWriter(sockStream);
+ 
+            le = new BinaryReader(sockStream);
+
+            do
+            {
+               try
+               {
+                  message = le.ReadString();
+ 
+                  Exibe.Text += message;
+               }
+ 
+               catch (Exception)
+               {
+                  System.Environment.Exit(System.Environment.ExitCode);
+               }
+ 
+            } while( message != "FIM" );
+ 
+            escreve.Close();
+ 
+            le.Close();
+ 
+            sockStream.Close();
+ 
+            cliente.Close();
+ 
+            Application.Exit();
+         }
+         
+         catch (Exception error)
+ 
+         {
+            MessageBox.Show(error.ToString());
+         }
+ 
+      }
+ 
+   }
+ 
+}
